@@ -10,9 +10,9 @@ def get_image_url(code_or_url):
     val = str(code_or_url).strip()
     if val.startswith("http"):
         return val
-    # Použitie formátu, ktorý si našiel - je oveľa stabilnejší
-    return f"https://image.alza.cz/products/{val}/{val.jpg}?width=500&height=500".replace("{val.jpg}", f"{val}.jpg")
-
+    # SPRÁVNY ZÁPIS: {val}.jpg (bodka a jpg sú mimo zátvorky premennej)
+    return f"https://image.alza.cz/products/{val}/{val}.jpg?width=500&height=500"
+    
 # Inicializácia session state
 if 'picking_list' not in st.session_state:
     st.session_state.update({
