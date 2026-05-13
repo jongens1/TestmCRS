@@ -11,14 +11,14 @@ if 'picking_list' not in st.session_state:
     st.session_state.current_index = 0
     st.session_state.start_time = None
     st.session_state.end_time = None
-    st.session_state.test_active = False[1]
+    st.session_state.test_active = False
 
 st.title("📦 Picking Speed Test")
 
 # --- OBRAZOVKA 1: NASTAVENIE ---
 if not st.session_state.test_active and st.session_state.end_time is None:
     st.write("Vložte zoznam produktov (Formát: Kód, EAN, Počet)")
-    data_input = st.text_area("Vstup dát", placeholder="A123, 859123456789, 3\nB456, 859987654321, 2", height=200)[1]
+    data_input = st.text_area("Vstup dát", placeholder="A123, 859123456789, 3\nB456, 859987654321, 2", height=200)
     
     if st.button("🚀 Spustiť test"):
         if data_input:
@@ -27,10 +27,15 @@ if not st.session_state.test_active and st.session_state.end_time is None:
             for line in lines:
                 parts = line.split(',')
                 if len(parts) >= 3:
-                    code, ean, qty = parts[0].strip(), parts[1].strip(), int(parts[2].strip())
-                    # Rozmnoženie na jednotlivé kusy
-                    for _ in range(qty):
-                        temp_list.append({"code": code, "ean": ean})
+                    try:
+                        code = parts[0].strip()
+                        ean = parts[1].strip()
+                        qty = int(parts[2].strip())
+                        # Rozmnoženie na jednotlivé kusy
+                        for _ in range(qty):
+                            temp_list.append({"code": code, "ean": ean})
+                    except ValueError:
+                        continue
             
             if temp_list:
                 random.shuffle(temp_list)
@@ -45,10 +50,10 @@ if not st.session_state.test_active and st.session_state.end_time is None:
 # --- OBRAZOVKA 2: TEST ---
 elif st.session_state.test_active:
     idx = st.session_state.current_index
-    total = len(st.session_state.picking_list)[1]
+    total = len(st.session_state.picking_list)
     
     if idx < total:
-        item = st.session_state.picking_list[idx][1]
+        item = st.session_state.picking_list[idx]
         
         # Priebeh
         st.progress((idx) / total)
@@ -59,17 +64,19 @@ elif st.session_state.test_active:
         st.info(f"EAN: {item['ean']}")
         
         st.write("---")
+        # Tlačidlo pre ďalší kus
         if st.button("✅ NASKENOVANÉ (Next)", use_container_width=True):
             st.session_state.current_index += 1
             if st.session_state.current_index >= total:
                 st.session_state.end_time = time.time()
                 st.session_state.test_active = False
-            st.rerun()[1]
+            st.rerun()
             
     if st.button("❌ Zrušiť test"):
         st.session_state.test_active = False
         st.session_state.picking_list = []
-        st.rerun()[1]
+        st.session_state.end_time = None
+        st.rerun()
 
 # --- OBRAZOVKA 3: VÝSLEDKY ---
 elif st.session_state.end_time is not None:
@@ -87,11 +94,5 @@ elif st.session_state.end_time is not None:
     if st.button("🔄 Nový test"):
         st.session_state.end_time = None
         st.session_state.picking_list = []
+        st.session_state.test_active = False
         st.rerun()
-```[1]
-
-### 2. Súbor `requirements.txt`
-Do tohto súboru napíš len jeden riadok:
-```text
-streamlit
-pandas
