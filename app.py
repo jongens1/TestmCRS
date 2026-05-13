@@ -3,16 +3,15 @@ import random
 import time
 
 # Nastavenie stránky
-st.set_page_config(page_title="Pick Test + Images", page_icon="🖼️")
+st.set_page_config(page_title="Alza Pick Test Pro", page_icon="📦")
 
-# Pomocná funkcia na získanie URL obrázka
+# --- OPRAVENÁ FUNKCIA PRE OBRÁZKY ---
 def get_image_url(code_or_url):
-    code_or_url = str(code_or_url).strip()
-    # Ak to vyzerá ako link, vráť ho priamo
-    if code_or_url.startswith("http"):
-        return code_or_url
-    # Inak predpokladaj, že je to Alza kód a skús CDN
-    return f"https://cdn.alza.cz/ImgW.ashx?fd=f3&i={code_or_url}"
+    val = str(code_or_url).strip()
+    if val.startswith("http"):
+        return val
+    # Použitie formátu, ktorý si našiel - je oveľa stabilnejší
+    return f"https://image.alza.cz/products/{val}/{val.jpg}?width=500&height=500".replace("{val.jpg}", f"{val}.jpg")
 
 # Inicializácia session state
 if 'picking_list' not in st.session_state:
@@ -43,24 +42,18 @@ def check_scan():
             st.session_state.end_time = time.time()
             st.session_state.test_active = False
     else:
-        st.session_state.last_error = f"❌ Nesprávny EAN: {scanned_ean}"
+        st.session_state.last_error = f"❌ Zlý EAN: {scanned_ean}"
     
     st.session_state.scanner_input = ""
 
-st.title("🖼️ Pick Test s obrázkami")
+st.title("📦 Alza Pick Test")
 
 # --- 1. NASTAVENIE ---
 if not st.session_state.test_active and st.session_state.end_time is None:
-    st.markdown("""
-    **Formát dát:** `Kód, EAN, Počet, [URL obrázku - voliteľné]`  
-    *Ak nezadáte URL, použije sa obrázok z Alza CDN podľa kódu.*
-    """)
+    st.write("Vlož dáta: **Kód, EAN, Počet**")
+    data_input = st.text_area("Vstup dát", placeholder="SGR_AD_C351CB, 8595691027976, 2", height=150)
     
-    data_input = st.text_area("Vložiť dáta", 
-                             placeholder="RI035b1, 8594177933134, 2\nhttps://img.url, 111222, 1", 
-                             height=150)
-    
-    if st.button("🚀 PRIPRAVIŤ TEST", use_container_width=True):
+    if st.button("🚀 ŠTART", use_container_width=True):
         if data_input:
             temp_list = []
             for line in data_input.strip().split('\n'):
@@ -70,7 +63,7 @@ if not st.session_state.test_active and st.session_state.end_time is None:
                         code = parts[0].strip()
                         ean = parts[1].strip()
                         qty = int(parts[2].strip())
-                        # Ak je 4. stĺpec, použi ho ako zdroj obrázku, inak použi kód
+                        # Klúč 'img' tu explicitne definujeme, aby nevznikol KeyError
                         img_source = parts[3].strip() if len(parts) > 3 else code
                         
                         for _ in range(qty):
@@ -95,31 +88,29 @@ elif st.session_state.test_active:
     total = len(st.session_state.picking_list)
     item = st.session_state.picking_list[idx]
     
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([2, 1])
     col1.write(f"Položka: **{idx + 1} / {total}**")
     with col2:
-        if st.session_state.start_time is not None:
+        if st.session_state.start_time:
             elapsed = time.time() - st.session_state.start_time
-            st.success(f"⏱️ Čas: {elapsed:.0f} s")
+            st.write(f"⏱️ **{elapsed:.0f} s**")
         else:
-            st.warning("⏳ Čakám na 1. sken")
+            st.warning("Čakám na 1. sken")
 
     st.progress(idx / total)
 
-    # HLAVNÁ KARTA S OBRÁZKOM
-    with st.container():
-        st.markdown('<div style="border: 2px solid #ddd; border-radius: 15px; padding: 20px; background: white; text-align: center;">', unsafe_allow_html=True)
-        
-        # Zobrazenie obrázka
-        img_url = get_image_url(item['img'])
-        st.image(img_url, width=200)
-        
-        st.markdown(f"""
-            <div style="font-size: 1.2em; color: #666; margin-top:10px;">PRODUKT:</div>
-            <div style="font-size: 2.5em; font-weight: bold; color: #1f77b4;">{item['code']}</div>
-            <div style="font-size: 1.2em; color: #333;">Očakávaný EAN: <code>{item['ean']}</code></div>
-        """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    # KARTA PRODUKTU
+    st.markdown('<div style="border: 2px solid #eee; border-radius: 10px; padding: 15px; text-align: center; background: white;">', unsafe_allow_html=True)
+    
+    # Tu používame tvoj nový URL formát
+    url = get_image_url(item.get('img', item['code']))
+    st.image(url, width=250)
+    
+    st.markdown(f"""
+        <h1 style="color: #1f77b4; margin-bottom: 0;">{item['code']}</h1>
+        <p style="color: #666; font-size: 1.1em;">EAN: {item['ean']}</p>
+    """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.write("")
     st.text_input("Naskenuj EAN", key="scanner_input", on_change=check_scan)
@@ -134,12 +125,10 @@ elif st.session_state.end_time is not None:
     
     st.balloons()
     st.success("✅ Test úspešne dokončený!")
+    st.metric("Priemer na kus", f"{duration/total_items:.2f} s")
+    st.write(f"Celkový čas: {duration:.2f} s")
     
-    c1, c2 = st.columns(2)
-    c1.metric("Celkový čas", f"{duration:.2f} s")
-    c2.metric("Priemer na kus", f"{duration/total_items:.2f} s")
-    
-    if st.button("Nový test", use_container_width=True):
+    if st.button("Nový test"):
         st.session_state.end_time = None
         st.session_state.picking_list = []
         st.rerun()
