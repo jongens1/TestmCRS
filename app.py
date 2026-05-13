@@ -39,7 +39,7 @@ def check_scan():
         st.session_state.last_error = f"❌ Zlý EAN: {scanned_ean}"
     st.session_state.scanner_input = ""
 
-st.title("📦 Alza Pick Test")
+st.title("📦 Random pick GEN")
 
 # --- 1. NASTAVENIE ---
 if not st.session_state.test_active and st.session_state.end_time is None:
