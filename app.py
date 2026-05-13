@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 import random
-import time[3][1][6]
+import time
 
-st.set_page_config(page_title="Alza Pick Test", page_icon="📦")[1]
+st.set_page_config(page_title="Alza Pick Test", page_icon="📦")
 
 # Inicializácia session state (pamäť aplikácie)
 if 'picking_list' not in st.session_state:
