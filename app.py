@@ -1,6 +1,6 @@
 import streamlit as st
 import random
-import time[4][5]
+import time
 
 # Nastavenie stránky
 st.set_page_config(page_title="Pick Test - Timer Pro", page_icon="⏱️")
